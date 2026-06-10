@@ -5,21 +5,16 @@ import (
 	"log"
 	"time"
 
+	"github.com/sagar-pardhi/go-job-queue/config"
 	"github.com/sagar-pardhi/go-job-queue/internal/database"
 	"github.com/sagar-pardhi/go-job-queue/internal/jobs"
 	redisclient "github.com/sagar-pardhi/go-job-queue/internal/redis"
 )
 
 func main() {
-	connString := database.BuildConnectionString(
-		"localhost",
-		"5433",
-		"admin",
-		"admin",
-		"jobqueue",
-	)
+	cfg := config.Load()
 
-	db, err := database.NewPostgres(connString)
+	db, err := database.NewPostgres(cfg.DatabaseURL())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,7 +22,7 @@ func main() {
 	repo := jobs.NewRepository(db)
 
 	redisClient := redisclient.NewRedis(
-		"localhost:6379",
+		cfg.RedisAddr,
 	)
 
 	log.Println("Worker started...")
@@ -47,11 +42,11 @@ func main() {
 
 		log.Println("Processing: ", jobID)
 
-		repo.UpdateStatus(jobID, "processing")
+		repo.UpdateStatus(jobID, jobs.StatusProcessing)
 
 		time.Sleep(5 * time.Second)
 
-		repo.UpdateStatus(jobID, "completed")
+		repo.UpdateStatus(jobID, jobs.StatusCompleted)
 
 		log.Println("Completed: ", jobID)
 	}
