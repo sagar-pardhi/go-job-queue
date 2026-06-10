@@ -1,0 +1,113 @@
+package jobs
+
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/jackc/pgx/v5"
+)
+
+type Repository struct {
+	db *pgx.Conn
+}
+
+func NewRepository(db *pgx.Conn) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) Create(job *Job) error {
+	payload, _ := json.Marshal(job.Payload)
+
+	_, err := r.db.Exec(
+		context.Background(),
+		`
+		INSERT INTO Jobs(
+			id,
+			type,
+			payload,
+			status
+		)
+		VALUES ($1, $2, $3, $4)
+		`,
+		job.ID,
+		job.Type,
+		payload,
+		job.Status,
+	)
+
+	return err
+}
+
+func (r *Repository) GetByID(id string) (*Job, error) {
+	var job Job
+
+	err := r.db.QueryRow(
+		context.Background(),
+		`
+		SELECT id, type, payload, status
+		FROM jobs
+		WHERE id = $1
+		`,
+		id,
+	).Scan(
+		&job.ID,
+		&job.Type,
+		&job.Payload,
+		&job.Status,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &job, err
+}
+
+func (r *Repository) UpdateStatus(id string, status string) error {
+	_, err := r.db.Exec(
+		context.Background(),
+		`
+		UPDATE jobs
+		SET Status = $1,
+			updated_at = NOW()
+		WHERE id = $2
+		`,
+		status,
+		id,
+	)
+
+	return err
+}
+
+func (r *Repository) List() ([]Job, error) {
+	rows, err := r.db.Query(
+		context.Background(),
+		`
+		SELECT id, type, payload, status
+		FROM jobs
+		ORDER BY created_at DESC
+		`,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var jobs []Job
+
+	for rows.Next() {
+		var job Job
+
+		rows.Scan(
+			&job.ID,
+			&job.Type,
+			&job.Payload,
+			&job.Status,
+		)
+
+		jobs = append(jobs, job)
+	}
+
+	return jobs, nil
+}
