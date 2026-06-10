@@ -36,10 +36,12 @@ func (h *Handler) CreateJob(c *gin.Context) {
 	}
 
 	job := &Job{
-		ID:      uuid.New().String(),
-		Type:    req.Type,
-		Payload: req.Payload,
-		Status:  StatusPending,
+		ID:         uuid.New().String(),
+		Type:       req.Type,
+		Payload:    req.Payload,
+		Status:     StatusPending,
+		Retries:    0,
+		MaxRetries: 3,
 	}
 
 	if err := h.repo.Create(job); err != nil {
