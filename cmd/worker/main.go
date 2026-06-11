@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/sagar-pardhi/go-job-queue/config"
 	"github.com/sagar-pardhi/go-job-queue/internal/database"
 	"github.com/sagar-pardhi/go-job-queue/internal/jobs"
@@ -70,13 +72,22 @@ func main() {
 					err.Error(),
 				)
 
-				redisClient.LPush(
-					context.Background(),
-					"queue:jobs",
-					jobID,
+				delay := worker.RetryDelay(
+					retries,
 				)
 
-				log.Println("Job requeued: ", jobID)
+				retryAt := time.Now().Add(delay).Unix()
+
+				redisClient.ZAdd(
+					context.Background(),
+					"queue:delayed",
+					redis.Z{
+						Score:  float64(retryAt),
+						Member: jobID,
+					},
+				)
+
+				log.Printf("Job %s scheduled for retry in %v", jobID, delay)
 			} else {
 				repo.UpdateFailure(
 					jobID,
