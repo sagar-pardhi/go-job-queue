@@ -127,7 +127,7 @@ func (r *Repository) UpdateFailure(id string, retries int, errMsg string) error 
 		context.Background(),
 		`
 		UPDATE jobs
-		SET retries = $1
+		SET retries = $1,
 			error = $2
 		WHERE id = $3
 		`,
