@@ -5,4 +5,5 @@ const (
 	StatusProcessing = "processing"
 	StatusCompleted  = "completed"
 	StatusFailed     = "failed"
+	StatusRetrying   = "retrying"
 )

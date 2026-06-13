@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewPostgres(connString string) (*pgx.Conn, error) {
-	return pgx.Connect(context.Background(), connString)
+func NewPostgres(connString string) (*pgxpool.Pool, error) {
+	return pgxpool.New(context.Background(), connString)
 }
 
 func BuildConnectionString(
