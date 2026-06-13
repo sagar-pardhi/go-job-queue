@@ -24,8 +24,8 @@ func NewHandler(repo *Repository, redis *redis.Client) *Handler {
 
 func (h *Handler) CreateJob(c *gin.Context) {
 	var req struct {
-		Type    string          `json:type`
-		Payload json.RawMessage `json:payload`
+		Type    string          `json:"type"`
+		Payload json.RawMessage `json:"payload"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -36,10 +36,12 @@ func (h *Handler) CreateJob(c *gin.Context) {
 	}
 
 	job := &Job{
-		ID:      uuid.New().String(),
-		Type:    req.Type,
-		Payload: req.Payload,
-		Status:  "pending",
+		ID:         uuid.New().String(),
+		Type:       req.Type,
+		Payload:    req.Payload,
+		Status:     StatusPending,
+		Retries:    0,
+		MaxRetries: 3,
 	}
 
 	if err := h.repo.Create(job); err != nil {

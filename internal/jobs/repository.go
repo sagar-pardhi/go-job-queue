@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Repository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewRepository(db *pgx.Conn) *Repository {
+func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
@@ -25,14 +25,18 @@ func (r *Repository) Create(job *Job) error {
 			id,
 			type,
 			payload,
-			status
+			status,
+			retries,
+			max_retries
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		`,
 		job.ID,
 		job.Type,
 		payload,
 		job.Status,
+		job.Retries,
+		job.MaxRetries,
 	)
 
 	return err
@@ -44,7 +48,7 @@ func (r *Repository) GetByID(id string) (*Job, error) {
 	err := r.db.QueryRow(
 		context.Background(),
 		`
-		SELECT id, type, payload, status
+		SELECT id, type, payload, status, retries, max_retries, COALESCE(error, '')
 		FROM jobs
 		WHERE id = $1
 		`,
@@ -54,6 +58,9 @@ func (r *Repository) GetByID(id string) (*Job, error) {
 		&job.Type,
 		&job.Payload,
 		&job.Status,
+		&job.Retries,
+		&job.MaxRetries,
+		&job.Error,
 	)
 
 	if err != nil {
@@ -83,7 +90,7 @@ func (r *Repository) List() ([]Job, error) {
 	rows, err := r.db.Query(
 		context.Background(),
 		`
-		SELECT id, type, payload, status
+		SELECT id, type, payload, status, retries, max_retries, COALESCE(error, '')
 		FROM jobs
 		ORDER BY created_at DESC
 		`,
@@ -104,10 +111,42 @@ func (r *Repository) List() ([]Job, error) {
 			&job.Type,
 			&job.Payload,
 			&job.Status,
+			&job.Retries,
+			&job.MaxRetries,
+			&job.Error,
 		)
 
 		jobs = append(jobs, job)
 	}
 
 	return jobs, nil
+}
+
+func (r *Repository) UpdateFailure(id string, retries int, errMsg string) error {
+	_, err := r.db.Exec(
+		context.Background(),
+		`
+		UPDATE jobs
+		SET retries = $1,
+			error = $2
+		WHERE id = $3
+		`,
+		retries,
+		errMsg,
+		id,
+	)
+	return err
+}
+
+func (r *Repository) ClearError(id string) error {
+	_, err := r.db.Exec(
+		context.Background(),
+		`
+		UPDATE jobs
+		SET error = NULL
+		WHERE id = $1
+		`,
+		id,
+	)
+	return err
 }
