@@ -88,3 +88,22 @@ func (h *Handler) ListJobs(c *gin.Context) {
 
 	c.JSON(200, jobs)
 }
+
+func (h *Handler) Metrics(c *gin.Context) {
+	metrics, err := h.repo.GetMetrics()
+
+	if err != nil {
+		c.JSON(
+			500,
+			gin.H{
+				"error": err.Error(),
+			},
+		)
+		return
+	}
+
+	c.JSON(
+		200,
+		metrics,
+	)
+}

@@ -36,6 +36,7 @@ func main() {
 	router.POST("/jobs", handler.CreateJob)
 	router.GET("/jobs/:id", handler.GetJob)
 	router.GET("/jobs", handler.ListJobs)
+	router.GET("/metrics", handler.Metrics)
 
 	log.Println("API running on :8080")
 	router.Run(":8080")
