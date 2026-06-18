@@ -1,25 +1,50 @@
 package worker
 
-import "log"
+import (
+	"context"
+	"log"
+	"sync"
+)
 
-func StartWorker(id int, service *Service, jobs <-chan string) {
-	for jobID := range jobs {
-		log.Printf(
-			"[Worker %d] Processing %s",
-			id,
-			jobID,
-		)
+func StartWorker(ctx context.Context, id int, service *Service, jobs <-chan string, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-		err := service.Process(
-			jobID,
-		)
+	for {
 
-		if err != nil {
+		select {
+
+		case <-ctx.Done():
+
 			log.Printf(
-				"[Worker %d] Error: %v",
+				"[Worker %d] shutting down",
+				id,
+			)
+
+			return
+
+		case jobID, ok := <-jobs:
+
+			if !ok {
+				return
+			}
+
+			log.Printf(
+				"[Worker %d] Processing %s",
 				id,
 				jobID,
 			)
+
+			err := service.Process(
+				jobID,
+			)
+
+			if err != nil {
+				log.Printf(
+					"[Worker %d] Error: %v",
+					id,
+					err,
+				)
+			}
 		}
 	}
 }
