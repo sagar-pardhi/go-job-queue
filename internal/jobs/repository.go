@@ -150,3 +150,59 @@ func (r *Repository) ClearError(id string) error {
 	)
 	return err
 }
+
+func (r *Repository) GetMetrics() (*Metrics, error) {
+	rows, err := r.db.Query(
+		context.Background(),
+		`
+		SELECT status, COUNT(*)
+		FROM jobs
+		GROUP BY status
+		`,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	metrics := &Metrics{}
+
+	for rows.Next() {
+
+		var status string
+		var count int
+
+		err := rows.Scan(
+			&status,
+			&count,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		switch status {
+
+		case StatusPending:
+			metrics.Pending = count
+
+		case StatusProcessing:
+			metrics.Processing = count
+
+		case StatusRetrying:
+			metrics.Retrying = count
+
+		case StatusCompleted:
+			metrics.Completed = count
+
+		case StatusFailed:
+			metrics.Failed = count
+		}
+
+		metrics.Total += count
+	}
+
+	return metrics, nil
+}
