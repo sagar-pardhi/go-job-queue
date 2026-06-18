@@ -1,0 +1,157 @@
+basePath: /
+definitions:
+  jobs.CreateJobRequest:
+    properties:
+      payload:
+        additionalProperties: true
+        type: object
+      type:
+        type: string
+    type: object
+  jobs.Job:
+    properties:
+      created_at:
+        type: string
+      error:
+        type: string
+      id:
+        type: string
+      max_retries:
+        type: integer
+      payload:
+        additionalProperties: {}
+        type: object
+      retries:
+        type: integer
+      status:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  jobs.JobResponse:
+    properties:
+      error:
+        type: string
+      id:
+        type: string
+      max_retries:
+        type: integer
+      retries:
+        type: integer
+      status:
+        type: string
+      type:
+        type: string
+    type: object
+  jobs.MetricsResponse:
+    properties:
+      completed:
+        type: integer
+      failed:
+        type: integer
+      pending:
+        type: integer
+      processing:
+        type: integer
+      retrying:
+        type: integer
+      total:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Sagar Pardhi
+  description: Distributed Job Queue built using Go, Redis and PostgreSQL.
+  license:
+    name: MIT
+  termsOfService: http://swagger.io/terms/
+  title: Go Job Queue API
+  version: "1.0"
+paths:
+  /jobs:
+    get:
+      description: Returns all jobs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/jobs.Job'
+            type: array
+      summary: List jobs
+      tags:
+      - Jobs
+    post:
+      consumes:
+      - application/json
+      description: Creates a new background job and pushes it to Redis
+      parameters:
+      - description: Create Job Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/jobs.CreateJobRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/jobs.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new job
+      tags:
+      - Jobs
+  /jobs/{id}:
+    get:
+      description: Returns a job by ID
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/jobs.Job'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get job
+      tags:
+      - Jobs
+  /metrics:
+    get:
+      description: Returns aggregated job statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/jobs.MetricsResponse'
+      summary: Get queue metrics
+      tags:
+      - Metrics
+swagger: "2.0"
