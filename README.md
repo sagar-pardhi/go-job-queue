@@ -198,7 +198,7 @@ Failed
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/go-job-queue.git
+git clone https://github.com/sagar-pardhi/go-job-queue.git
 
 cd go-job-queue
 ```
